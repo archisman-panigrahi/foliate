@@ -48,8 +48,51 @@ const getHTML = async range => {
     return new XMLSerializer().serializeToString(fragment)
 }
 
+const getBackgroundImageCSS = ({ backgroundImage, backgroundImageOpacity,
+    backgroundImageSize, backgroundImageRepeat, mediaActiveClass }, bg, fg, activeBg) => {
+    if (!backgroundImage) return ''
+    const opacity = Math.max(0, Math.min(1, backgroundImageOpacity))
+    const size = ['auto', 'cover', 'contain'].includes(backgroundImageSize)
+        ? backgroundImageSize : 'auto'
+    const repeat = backgroundImageRepeat ? 'repeat' : 'no-repeat'
+    const image = `url(${JSON.stringify(backgroundImage)})`
+    return `
+        html {
+            --foliate-bg-color: ${bg};
+            --foliate-bg-image: ${image};
+            --foliate-bg-image-overlay-opacity: ${100 - opacity * 100}%;
+            --foliate-bg-image-size: ${size};
+            --foliate-bg-image-repeat: ${repeat};
+            background-color: ${bg} !important;
+            background-image: none !important;
+        }
+        body {
+            position: relative;
+            background-color: ${bg} !important;
+            background-image: none !important;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: ${image};
+            background-position: center;
+            background-size: ${size};
+            background-repeat: ${repeat};
+            mix-blend-mode: multiply;
+            opacity: ${opacity};
+        }
+        .${CSS.escape(mediaActiveClass)}, .${CSS.escape(mediaActiveClass)} * {
+            color: ${fg} !important;
+            background: ${activeBg} !important;
+        }
+    `
+}
+
 const getCSS = ({
     lineHeight, justify, hyphenate, invert, theme, overrideFont, userStylesheet,
+    backgroundImage, backgroundImageOpacity, backgroundImageSize, backgroundImageRepeat,
     mediaActiveClass,
 }) => [`
     @namespace epub "http://www.idpf.org/2007/ops";
@@ -133,6 +176,11 @@ const getCSS = ({
             background: color-mix(in hsl, ${theme.light.fg}, #fff 50%) !important;
             background: color-mix(in hsl, ${theme.light.fg}, ${theme.light.bg} 85%) !important;
         }` : ''}
+        ${getBackgroundImageCSS({
+            backgroundImage, backgroundImageOpacity,
+            backgroundImageSize, backgroundImageRepeat, mediaActiveClass,
+        }, theme.light.bg, theme.light.fg,
+        `color-mix(in hsl, ${theme.light.fg}, ${theme.light.bg} 85%)`)}
     }
     @media screen and (prefers-color-scheme: dark) {
         ${invert ? '' : `
@@ -153,6 +201,11 @@ const getCSS = ({
             background: color-mix(in hsl, ${theme.dark.fg}, #000 50%) !important;
             background: color-mix(in hsl, ${theme.dark.fg}, ${theme.dark.bg} 75%) !important;
         }`}
+        ${invert ? '' : getBackgroundImageCSS({
+            backgroundImage, backgroundImageOpacity,
+            backgroundImageSize, backgroundImageRepeat, mediaActiveClass,
+        }, theme.dark.bg, theme.dark.fg,
+        `color-mix(in hsl, ${theme.dark.fg}, ${theme.dark.bg} 75%)`)}
     }
     p, li, blockquote, dd {
         line-height: ${lineHeight};
@@ -290,6 +343,18 @@ class Reader {
         $style.setProperty('--light-fg', theme.light.fg)
         $style.setProperty('--dark-bg', theme.dark.bg)
         $style.setProperty('--dark-fg', theme.dark.fg)
+        const { backgroundImage, backgroundImageOpacity,
+            backgroundImageSize, backgroundImageRepeat } = this.style
+        const opacity = Math.max(0, Math.min(1, backgroundImageOpacity))
+        $style.setProperty('--bg-image', backgroundImage
+            ? `url(${JSON.stringify(backgroundImage)})` : 'none')
+        $style.setProperty('--bg-image-opacity', opacity)
+        $style.setProperty('--bg-image-overlay-opacity', `${(1 - opacity) * 100}%`)
+        $style.setProperty('--bg-image-size',
+            ['auto', 'cover', 'contain'].includes(backgroundImageSize)
+                ? backgroundImageSize : 'auto')
+        $style.setProperty('--bg-image-repeat',
+            backgroundImageRepeat ? 'repeat' : 'no-repeat')
         const renderer = this.view?.renderer
         if (renderer) {
             renderer.setAttribute('flow', layout.flow)

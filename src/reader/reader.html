@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' blob: 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self' blob: data:; frame-src blob: data:; object-src blob: data:; form-action 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' blob: 'unsafe-inline'; img-src 'self' blob: data: foliate: foliate-background:; connect-src 'self' blob: data:; frame-src blob: data:; object-src blob: data:; form-action 'none';">
 <style>
 html {
     /* TODO: high contrast mode */
@@ -10,12 +10,25 @@ html {
     --border: rgba(0, 0, 0, .15);
     --bg: var(--light-bg);
     --fg: var(--light-fg);
+    --bg-image: none;
+    --bg-image-opacity: 0;
+    --bg-image-overlay-opacity: 100%;
+    --bg-image-size: auto;
+    --bg-image-repeat: repeat;
     height: 100%;
 }
 body {
     margin: 0 auto;
     height: 100%;
-    background: var(--bg);
+    background-color: var(--bg);
+    background-image:
+        linear-gradient(
+            color-mix(in srgb, var(--bg) var(--bg-image-overlay-opacity), transparent),
+            color-mix(in srgb, var(--bg) var(--bg-image-overlay-opacity), transparent)),
+        var(--bg-image);
+    background-position: center;
+    background-size: auto, var(--bg-image-size);
+    background-repeat: repeat, var(--bg-image-repeat);
     color: var(--fg);
 }
 @media (prefers-color-scheme: dark) {
@@ -37,6 +50,17 @@ foliate-view::part(head), foliate-view::part(foot) {
 }
 foliate-view {
     --overlayer-highlight-blend-mode: multiply;
+}
+foliate-view::part(filter) {
+    background-color: var(--bg) !important;
+    background-image:
+        linear-gradient(
+            color-mix(in srgb, var(--bg) var(--bg-image-overlay-opacity), transparent),
+            color-mix(in srgb, var(--bg) var(--bg-image-overlay-opacity), transparent)),
+        var(--bg-image) !important;
+    background-position: center !important;
+    background-size: auto, var(--bg-image-size) !important;
+    background-repeat: repeat, var(--bg-image-repeat) !important;
 }
 @media (prefers-color-scheme: dark) {
     foliate-view {

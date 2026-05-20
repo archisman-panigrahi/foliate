@@ -208,8 +208,14 @@ export const settings = name => {
 export const bindSettings = (name, target, arr) => {
     const s = settings(name)
     if (!s) return
-    for (const prop of arr)
-        s.bind(prop, target, prop, Gio.SettingsBindFlags.DEFAULT)
+    for (const prop of arr) {
+        if (!s.settings_schema.has_key(prop)) continue
+        try {
+            s.bind(prop, target, prop, Gio.SettingsBindFlags.DEFAULT)
+        } catch (e) {
+            console.warn(e)
+        }
+    }
     return s
 }
 

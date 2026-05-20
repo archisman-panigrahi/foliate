@@ -308,6 +308,24 @@ export const Application = GObject.registerClass({
                 border-radius: 9999px;
             }
 
+            .background-image-container .background-image-selector {
+                padding: 6px;
+                min-width: 120px;
+            }
+            .background-image-selector picture,
+            .background-image-selector image {
+                border-radius: 6px;
+            }
+            .background-image-selector label {
+                font-size: .85em;
+            }
+            .background-image-selector checkbutton {
+                min-height: 0;
+                min-width: 0;
+                margin: 0;
+                padding: 0;
+            }
+
             checkbutton.theme-selector {
                 padding: 0;
                 min-height: 44px;

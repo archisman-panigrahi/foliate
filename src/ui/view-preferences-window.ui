@@ -233,6 +233,81 @@
           </child>
         </object>
       </child>
+      <child>
+        <object class="AdwPreferencesGroup">
+          <property name="title" translatable="yes">Background Image</property>
+          <child>
+            <object class="GtkFlowBox" id="background-image-flow-box">
+              <property name="selection-mode">none</property>
+              <property name="homogeneous">True</property>
+              <property name="row-spacing">12</property>
+              <property name="column-spacing">12</property>
+              <style><class name="background-image-container"/></style>
+            </object>
+          </child>
+          <child>
+            <object class="AdwActionRow" id="background-image">
+              <property name="title" translatable="yes">Custom Image</property>
+              <property name="subtitle" translatable="yes">None</property>
+              <child>
+                <object class="GtkButton" id="background-image-clear">
+                  <property name="icon-name">edit-clear-symbolic</property>
+                  <property name="tooltip-text" translatable="yes">Clear Background Image</property>
+                  <property name="valign">center</property>
+                  <style><class name="flat"/></style>
+                </object>
+              </child>
+              <child>
+                <object class="GtkButton" id="background-image-button">
+                  <property name="icon-name">folder-pictures-symbolic</property>
+                  <property name="tooltip-text" translatable="yes">Choose Background Image</property>
+                  <property name="valign">center</property>
+                  <style><class name="flat"/></style>
+                </object>
+              </child>
+            </object>
+          </child>
+          <child>
+            <object class="AdwSpinRow" id="background-image-opacity">
+              <property name="title" translatable="yes">Image Opacity</property>
+              <property name="digits">2</property>
+              <property name="adjustment">
+                <object class="GtkAdjustment">
+                  <property name="lower">0</property>
+                  <property name="upper">1</property>
+                  <property name="step-increment">0.05</property>
+                  <property name="page-increment">0.1</property>
+                </object>
+              </property>
+            </object>
+          </child>
+          <child>
+            <object class="AdwComboRow" id="background-image-size">
+              <property name="title" translatable="yes">Image Size</property>
+              <property name="model">
+                <object class="GtkStringList">
+                  <items>
+                    <item translatable="yes">Original Size</item>
+                    <item translatable="yes">Cover</item>
+                    <item translatable="yes">Contain</item>
+                  </items>
+                </object>
+              </property>
+            </object>
+          </child>
+          <child>
+            <object class="AdwActionRow">
+              <property name="title" translatable="yes">Repeat Image</property>
+              <property name="activatable-widget">background-image-repeat</property>
+              <child>
+                <object class="GtkSwitch" id="background-image-repeat">
+                  <property name="valign">center</property>
+                </object>
+              </child>
+            </object>
+          </child>
+        </object>
+      </child>
     </object>
   </child>
   <child>

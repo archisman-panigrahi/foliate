@@ -10,7 +10,7 @@ import { gettext as _ } from 'gettext'
 
 import * as utils from './utils.js'
 import * as format from './format.js'
-import { WebView } from './webview.js'
+import { WebView, allowBackgroundImage } from './webview.js'
 
 import './toc.js'
 import './search.js'
@@ -45,6 +45,25 @@ const uiText = {
 const userStylesheet = utils.readFile(Gio.File.new_for_path(
     pkg.configpath('user-stylesheet.css')))
 
+const backgroundImages = [
+    { label: _('None'), value: '' },
+    { label: _('Concrete'), value: 'foliate:///images/concrete-texture.png' },
+    { label: _('Paper'), value: 'foliate:///images/paper-texture.png' },
+    { label: _('Sand'), value: 'foliate:///images/sand-texture.jpg' },
+    { label: _('Parchment'), value: 'foliate:///images/parchment-paper.jpg' },
+    { label: _('Scrapbook'), value: 'foliate:///images/scrapbook-texture.jpg' },
+    { label: _('Leaves'), value: 'foliate:///images/leaves-pattern.jpg' },
+    { label: _('Moon Sky'), value: 'foliate:///images/moon-sky.jpg' },
+    { label: _('Night Sky'), value: 'foliate:///images/night-sky.jpg' },
+]
+const customBackgroundImageIndex = backgroundImages.length
+
+const backgroundImageURI = path => {
+    if (path?.startsWith('foliate:///')) return path
+    allowBackgroundImage(path)
+    return path ? `foliate-background://${encodeURIComponent(path)}` : ''
+}
+
 const ViewSettings = utils.makeDataClass('FoliateViewSettings', {
     'brightness': 'double',
     'line-height': 'double',
@@ -58,6 +77,10 @@ const ViewSettings = utils.makeDataClass('FoliateViewSettings', {
     'animated': 'boolean',
     'invert': 'boolean',
     'theme': 'string',
+    'background-image': 'string',
+    'background-image-opacity': 'double',
+    'background-image-size': 'string',
+    'background-image-repeat': 'boolean',
     'autohide-cursor': 'boolean',
     'override-font': 'boolean',
 })
@@ -87,6 +110,9 @@ const ViewPreferencesWindow = GObject.registerClass({
         'line-height', 'justify', 'hyphenate', 'gap',
         'max-inline-size', 'max-block-size', 'max-column-count',
         'theme-flow-box',
+        'background-image-flow-box',
+        'background-image', 'background-image-button', 'background-image-clear',
+        'background-image-opacity', 'background-image-size', 'background-image-repeat',
         'reduce-animation',
     ],
 }, class extends Adw.PreferencesDialog {
@@ -108,9 +134,103 @@ const ViewPreferencesWindow = GObject.registerClass({
             'max-inline-size': [this._max_inline_size, 'value'],
             'max-block-size': [this._max_block_size, 'value'],
             'max-column-count': [this._max_column_count, 'value'],
+            'background-image-opacity': [this._background_image_opacity, 'value'],
+            'background-image-repeat': [this._background_image_repeat, 'active'],
             'animated': [this._reduce_animation, 'active', true],
             'override-font': [this._override_font, 'active'],
         })
+        const sizes = ['auto', 'cover', 'contain']
+        const openCustomBackgroundImage = () => {
+            const dialog = new Gtk.FileDialog()
+            const filter = new Gtk.FileFilter({
+                name: _('Images'),
+                mime_types: ['image/*'],
+            })
+            dialog.filters = new Gio.ListStore()
+            dialog.filters.append(new Gtk.FileFilter({
+                name: _('All Files'),
+                patterns: ['*'],
+            }))
+            dialog.filters.append(filter)
+            dialog.default_filter = filter
+            dialog.open(this.root, null, (self, res) => {
+                try {
+                    const file = self.open_finish(res)
+                    if (file) this.viewSettings.background_image = file.get_path() ?? ''
+                } catch {}
+            })
+        }
+        let backgroundGroup = null
+        let updatingBackgroundImage = false
+        const backgroundImageChecks = []
+        const setImage = image => {
+            if (image.value == null) openCustomBackgroundImage()
+            else this.viewSettings.background_image = image.value
+        }
+        for (const image of [...backgroundImages, { label: _('Custom'), value: null }]) {
+            const widget = new Gtk.Box({
+                orientation: Gtk.Orientation.VERTICAL,
+                spacing: 6,
+            })
+            const check = new Gtk.CheckButton({ group: backgroundGroup })
+            backgroundGroup ??= check
+            const preview = new Gtk.Box({
+                width_request: 108,
+                height_request: 72,
+                overflow: Gtk.Overflow.HIDDEN,
+                valign: Gtk.Align.CENTER,
+                halign: Gtk.Align.CENTER,
+            })
+            if (image.value) preview.append(new Gtk.Picture({
+                file: Gio.File.new_for_uri(pkg.moduleuri(image.value.replace('foliate:///', ''))),
+                content_fit: Gtk.ContentFit.COVER,
+                width_request: 108,
+                height_request: 72,
+            }))
+            else preview.append(new Gtk.Image({
+                icon_name: image.value == null ? 'folder-pictures-symbolic' : 'edit-clear-symbolic',
+                pixel_size: 32,
+            }))
+            const label = new Gtk.Label({ label: image.label })
+            widget.append(preview)
+            widget.append(label)
+            widget.append(check)
+            widget.add_css_class('background-image-selector')
+            widget.add_css_class('card')
+            widget.add_controller(utils.connect(new Gtk.GestureClick(), {
+                'released': () => setImage(image),
+            }))
+            check.connect('toggled', () => {
+                if (updatingBackgroundImage) return
+                if (check.active) setImage(image)
+            })
+            this._background_image_flow_box.append(widget)
+            backgroundImageChecks.push(check)
+        }
+        const updateBackgroundImage = () => {
+            const path = this.viewSettings.background_image
+            const index = backgroundImages.findIndex(item => item.value === path)
+            updatingBackgroundImage = true
+            backgroundImageChecks[index >= 0 ? index : customBackgroundImageIndex].active = true
+            updatingBackgroundImage = false
+            this._background_image.visible = index < 0 && !!path
+            this._background_image.subtitle = path ? GLib.path_get_basename(path) : _('None')
+            this._background_image_clear.sensitive = !!path
+        }
+        const updateBackgroundSize = () => {
+            const index = sizes.indexOf(this.viewSettings.background_image_size)
+            this._background_image_size.selected = index >= 0 ? index : 0
+        }
+        updateBackgroundImage()
+        updateBackgroundSize()
+        this.viewSettings.connect('notify::background-image', updateBackgroundImage)
+        this.viewSettings.connect('notify::background-image-size', updateBackgroundSize)
+        this._background_image_size.connect('notify::selected', row => {
+            this.viewSettings.background_image_size = sizes[row.selected] ?? sizes[0]
+        })
+        this._background_image_button.connect('clicked', openCustomBackgroundImage)
+        this._background_image_clear.connect('clicked', () =>
+            this.viewSettings.background_image = '')
 
         const actionGroup = utils.addPropertyActions(this.viewSettings, ['theme'])
         this.insert_action_group('view-settings', actionGroup)
@@ -204,6 +324,9 @@ GObject.registerClass({
         'max-column-count': 2,
         'scrolled': false,
         'animated': true,
+        'background-image-opacity': 0.6,
+        'background-image-size': 'cover',
+        'background-image-repeat': true,
     })
     constructor(params) {
         super(params)
@@ -331,6 +454,10 @@ GObject.registerClass({
                 hyphenate: view.hyphenate,
                 invert: view.invert,
                 theme: view.invert ? invertTheme(theme) : theme,
+                backgroundImage: backgroundImageURI(view.background_image),
+                backgroundImageOpacity: view.background_image_opacity,
+                backgroundImageSize: view.background_image_size,
+                backgroundImageRepeat: view.background_image_repeat,
                 overrideFont: view.override_font,
                 userStylesheet,
             },

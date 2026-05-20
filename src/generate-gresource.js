@@ -43,6 +43,7 @@ ${[
         ...await getFiles('foliate-js/vendor/pdfjs/'),
         ...await getFiles('foliate-js/vendor/pdfjs/cmaps/', null, true),
         ...await getFiles('foliate-js/vendor/pdfjs/standard_fonts/', null, true),
+        ...await getFiles('images/'),
         ...await getFiles('opds/'),
         ...await getFiles('selection-tools/'),
         ...await getFiles('common/'),

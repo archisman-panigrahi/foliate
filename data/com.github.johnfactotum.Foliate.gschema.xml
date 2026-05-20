@@ -91,6 +91,18 @@
     <key name="theme" type="s">
       <default>'default'</default>
     </key>
+    <key name="background-image" type="s">
+      <default>''</default>
+    </key>
+    <key name="background-image-opacity" type="d">
+      <default>0.6</default>
+    </key>
+    <key name="background-image-size" type="s">
+      <default>'cover'</default>
+    </key>
+    <key name="background-image-repeat" type="b">
+      <default>true</default>
+    </key>
     <key name="autohide-cursor" type="b">
       <default>false</default>
     </key>

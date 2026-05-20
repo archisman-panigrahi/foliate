@@ -257,6 +257,14 @@
     <file compressed="true">foliate-js/vendor/pdfjs/standard_fonts/LiberationSans-BoldItalic.ttf</file>
     <file compressed="true">foliate-js/vendor/pdfjs/standard_fonts/LiberationSans-Italic.ttf</file>
     <file compressed="true">foliate-js/vendor/pdfjs/standard_fonts/LiberationSans-Regular.ttf</file>
+    <file>images/concrete-texture.png</file>
+    <file>images/leaves-pattern.jpg</file>
+    <file>images/moon-sky.jpg</file>
+    <file>images/night-sky.jpg</file>
+    <file>images/paper-texture.png</file>
+    <file>images/parchment-paper.jpg</file>
+    <file>images/sand-texture.jpg</file>
+    <file>images/scrapbook-texture.jpg</file>
     <file>opds/main.html</file>
     <file>opds/main.js</file>
     <file>selection-tools/common.css</file>

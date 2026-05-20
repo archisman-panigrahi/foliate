@@ -19,15 +19,31 @@ const registerPaths = (name, dirs) => registerScheme(name, req => {
         ? req.get_path().replace(/(?<=\/icons)\/hicolor(?=\/scalable\/)/, '')
         : req.get_path()
     if (dirs.every(dir => !path.startsWith(dir))) throw new Error()
+    const [contentType] = Gio.content_type_guess(path, null)
     const mime = path.endsWith('.js') || path.endsWith('.mjs') ? 'application/javascript'
-        : path.endsWith('.svg') ? 'image/svg+xml' : 'text/html'
+        : contentType ?? 'text/html'
     const file = Gio.File.new_for_uri(pkg.moduleuri(path))
     req.finish(file.read(null), -1, mime)
 })
 
-registerPaths('foliate', ['/reader/', '/foliate-js/'])
+registerPaths('foliate', ['/reader/', '/foliate-js/', '/images/'])
 registerPaths('foliate-opds', ['/opds/', '/foliate-js/', '/icons/', '/common/'])
 registerPaths('foliate-selection-tool', ['/selection-tools/', '/icons/', '/common/'])
+
+const backgroundImagePaths = new Set()
+
+export const allowBackgroundImage = path => {
+    if (path) backgroundImagePaths.add(path)
+}
+
+registerScheme('foliate-background', req => {
+    const path = decodeURIComponent(req.get_uri().replace(/^foliate-background:\/\//, ''))
+    if (!backgroundImagePaths.has(path)) throw new Error()
+    const file = Gio.File.new_for_path(path)
+    const [contentType] = Gio.content_type_guess(path, null)
+    if (!contentType?.startsWith('image/')) throw new Error()
+    req.finish(file.read(null), -1, contentType)
+})
 
 /*
 `.run_javascript()` is hard to use if you're running an async function. You have
